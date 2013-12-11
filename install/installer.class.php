@@ -69,12 +69,12 @@ class Installer {
 	}
 	
 	public function remove_all_errors() {
-		$this->template->remove("#installer-form/fieldset/span.error");
+		$this->template->remove(".error");
 	}
 	
 	public function remove_invalid_data_errors() {
-		$this->template->remove("#installer-form/fieldset/#root-user-err");
-		$this->template->remove("#installer-form/fieldset/#root-pass-err");
+		$this->template->remove("#root-user-err");
+		$this->template->remove("#root-pass-err");
 	}
 	
 	private function setup_form() {
