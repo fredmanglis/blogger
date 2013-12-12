@@ -19,7 +19,7 @@ body {
 	}
 
 	div.wrapper {
-		background-color: white;
+		background-color: inherit;
 
 		max-width: 1000px;
 		
@@ -34,6 +34,11 @@ body {
 		border-radius: 0.2em;
 		
 		margin: 1em 0;
+	
+	}
+
+	div.footer {
+		clear: both;
 	
 	}
 
@@ -93,9 +98,42 @@ body {
 		
 		}
 		
-		.mainColumn p {
+		p {
 			margin: 1em 0;
 			line-height: 1.5em;
+		
+		}
+		
+		.mainColumn .comments {
+			padding: 1em 0;
+		
+		}
+		
+		.mainColumn .comment {
+			border: 1px dotted #999999;
+			padding: 0;
+			
+			margin: 0.5em 0;
+			
+			border-radius: 0.2em;
+		
+		}
+		
+		.mainColumn .comment p {
+			margin: 0.5em 0;
+			padding: 0 1em;
+		
+		}
+		
+		.mainColumn .comment p.meta {
+			background-color: #E5E5FF;
+			padding: 0.33em 1em;
+			margin: 0;
+		
+		}
+		
+		.mainColumn a {
+			text-decoration: none;
 		
 		}
 		
@@ -116,11 +154,6 @@ fieldset.info {
 
 }
 
-fieldset.info legend {
-	margin-bottom: 2em;
-
-}
-
 fieldset.info  label {
 	font-size: 1em;
 	font-weight: bold;
@@ -132,6 +165,8 @@ fieldset.info  label {
 	float: left;
 	text-align: right;
 	width: 30%;
+	
+	display: none;
 
 }
 
@@ -187,7 +222,7 @@ fieldset.info div.row:first-of-type {
 fieldset.buttons {
 	text-align: center;
 
-	padding: 1.3em 20%;
+	padding: 1.3em 5%;
 
 	border: none;
 	border-top: 2px solid #122348;;
@@ -229,16 +264,14 @@ fieldset.info legend {
 	color: white;
 	background-color: #122348;
 
-	font-size: 1.2em;
+	font-size: 1em;
 	font-weight: bold;
 
 	text-transform: uppercase;
 	padding: 0.5em 4%;
-/*
-	border-top-left-radius: 0.5em;
-	border-top-right-radius: 0.5em;
-*/
-	margin-bottom: 1.9em;
+
+	border-top-left-radius: 0.2em;
+	border-top-right-radius: 0.2em;
 
 	width: 92%;
 

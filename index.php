@@ -12,8 +12,16 @@ if ( file_exists( "install" ) ) { header( "Location: install/install.php" ); }
 require_once( "./User.class.php" );
 require_once( "./Token.class.php" );
 require_once( "./Article.class.php" );
+require_once( "./Comment.class.php" );
 
 require_once( "./markdown.php" );
+require_once( "./kses.php" );
+
+$allowed = array('b' => array(),
+                 'i' => array(),
+                 'a' => array('href' => 1, 'title' => 1),
+                 'p' => array('align' => 1),
+                 'br' => array());
 
 { // page building variables
 
@@ -46,7 +54,7 @@ $pageHeader = '<!DOCTYPE html>
 			</div>
 			<div class="body">
 				<div class="sideColumn">
-					<p>Hi there, I am ' . $name . ' and I am a ' . $proffesion . ' from Nairobi, Kenya</p>';
+					<p>Hi there, my name&apos;s ' . $name . ' and I am a ' . $proffesion . ' from Nairobi, Kenya</p>';
 				
 $pageFooter = '
 				</div>
@@ -158,11 +166,36 @@ switch( $section ) {
 					$pageBody .= '
 <div class="article">
 	<h1>' . $article -> getTitle() . '</h1>
-	' . Markdown( $article -> getBody() ) . '
+	' . kses( Markdown( $article -> getBody() ), $allowed ) . '
 </div>
-<div class="">
-	<form action="">
+<div class="comments">';
+
+					if( count( $article -> getComments() ) > 0 ) {
+	
+						foreach( $article -> getComments() as $commentID ) {
+						
+							$comment = new Comment( $commentID );
+
+							$pageBody .= '
+	<div class="comment">
+		<p class="meta">on ' . substr( $comment -> getDateCreated(), 0, 10 ) . ' at ' . substr( $comment -> getDateCreated(), 11, 8 ) . ', ' . $comment -> getAuthor() . ' said :</p>
+		' . kses( Markdown( $comment -> getBody() ), $allowed ) . '
+	</div>';
+	
+						}
+						
+					}
+
+					$pageBody .= '
+</div>
+<div class="commentForm">
+	<form action="?section=comments&amp;action=new"
+	      method="post">
 		<fieldset class="info">
+			<legend>please leave a comment</legend>
+			<input type="hidden"
+			       name="target"
+			       value="' . $_REQUEST[ "target" ] . '" />
 			<div class="row">
 				<textarea name="comment"
 				          placeholder="your comment here"></textarea>
@@ -206,6 +239,73 @@ switch( $section ) {
 		}
 	
 	} 
+	break;
+	
+	case "comments" : {
+		
+		$action = "add";
+		
+		if( isset( $_REQUEST[ "action" ] ) ) {
+			
+			$action = $_REQUEST[ "action" ];
+		
+		}
+		
+		switch( $action ) {
+			
+			case "add" :
+			case "new" :
+			default : {
+				
+				if( isset( $_POST[ "comment" ] ) ) {
+					
+					if( isset( $_POST[ "name" ] ) && isset( $_POST[ "email" ] ) && isset( $_POST[ "target" ] ) && ( filter_var( $_POST[ "email" ], FILTER_VALIDATE_EMAIL ) ) ) {
+						
+						$comment = new Comment( "00000", $_POST[ "comment" ], $_POST[ "target" ], $_POST[ "name" ], $_POST[ "email" ] );
+						
+						if( $comment -> saveToDB() ) {
+							
+							$pageBody .= '
+<div class="dialog">
+	<p>your comment has been saved and is awaiting moderation, thank you for your feedback</p>
+</div>';
+						
+						}
+						else {
+							
+							$pageBody .= '
+<div class="dialog">
+	<p>There was a problem saving yourcomment</p>
+</div>';
+						
+						}
+					
+					}
+					else {
+						
+						$pageBody .= '
+<div class="dialog">
+	<p>you must provide a valid email address and a name</p>
+</div>';
+					
+					}
+				
+				}
+				else {
+						
+					$pageBody .= '
+<div class="dialog">
+	<p>you comment cannot be empty</p>
+</div>';
+					
+				}
+			
+			}
+			break;
+	
+		}
+	
+	}
 	break;	
 
 }

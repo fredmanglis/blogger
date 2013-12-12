@@ -6,9 +6,23 @@ Class Article extends Post {
 
 	private $title;
 	
+	private $comments = Array();
+	
 	function setTitle( $title ) { $this -> title = $title; }
 	
 	function getTitle() { return $this -> title; }
+	
+	function addComment( $commentID ) { 
+		
+		if( !in_array( $commentID, $this -> comments ) ) {
+		
+			array_push( $this -> comments, $commentID );
+			
+		}
+	
+	}
+	
+	function getComments() { return $this -> comments; }
 	
 	function saveToDB( $returnType = 0 ) {
 		
@@ -80,6 +94,20 @@ FROM
 WHERE
 	`uniqueID` = "' .  $this -> getUniqueID() . '"';
 	
+		$queryComments = '
+SELECT 
+	`commentDetails`.`uniqueID` 
+FROM 
+	`commentDetails` 
+	INNER JOIN 
+		`postDetails` 
+	ON  
+		`commentDetails`.`uniqueID` = `postDetails`.`uniqueID`
+WHERE
+	`commentDetails`.`article` = "' . $this -> getUniqueID() . '"
+AND
+	`postDetails`.`status` = 1';
+	
 		switch( $returnType ) {
 			
 			case "0" : {
@@ -94,6 +122,17 @@ WHERE
 					$row = $statement -> fetch();
 					
 					$this -> setTitle( $row[ "title" ] );
+					
+					$statement = $dbh -> prepare( $queryComments );
+					$statement -> execute();
+
+					$results = $statement -> fetchAll( PDO::FETCH_ASSOC );
+
+					foreach( $results as $result ) {
+
+						$this -> addComment( $result[ "uniqueID" ] );
+
+					}					
 					
 					$returnValue = true;
 					
@@ -190,23 +229,58 @@ function getArticles( $returnType = 0, $filter = "all" ) {
 	GLOBAL $dbh;
 
 	$query = '
-SELECT
-	`uniqueID`
-FROM
-	`articleDetails`
+SELECT 
+	  `articleDetails`.`uniqueID` 
+	, `postDetails`.`dateCreated`
+FROM 
+	`articleDetails` 
+	INNER JOIN 
+		`postDetails` 
+	ON  
+		`articleDetails`.`uniqueID` = `postDetails`.`uniqueID`
 WHERE';
 
-	if( $filter == "all" ) {
+	switch( $filter ) {
+		
+		case "all" :
+		default : {
 
-		$query .= '
+			$query .= '
 	1';
+	
+		}
+		break;
+		
+		case "published" : {
+			
+			$query .= '
+	`postDetails`.`status` = 1';
+		
+		}
+		break;
+		
+		case "pending" : {
+			
+			$query .= '
+	`postDetails`.`status` = 0';
+		
+		}
+		break;
+		
+		case "retracted" :
+		case "withdrawn" : {
+			
+			$query .= '
+	`postDetails`.`status` = 2';
+		
+		}
+		break;
 
 	}
-	else {
-
-		// more to come?
-
-	}
+	
+	$query .= '
+ORDER BY
+	`dateCreated` DESC';
 
 	switch( $returnType ) {
 
@@ -308,6 +382,5 @@ WHERE
 	return $returnValue;
 
 }
-
 
 ?>

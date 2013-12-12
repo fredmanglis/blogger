@@ -6,9 +6,20 @@ Class Comment extends Post {
 
 	private $article;
 	
+	private $author;
+	private $email;	
+	
 	function setArticle( $article ) { $this -> article = $article; }
 	
 	function getArticle() { return $this -> article; }
+	
+	function setAuthor( $author ) { $this -> author = $author; }
+	
+	function getAuthor() { return $this -> author; }
+	
+	function setEmail( $email ) { $this -> email = $email; }
+	
+	function getEmail() { return $this -> email; }
 	
 	function saveToDB( $returnType = 0 ) {
 		
@@ -18,10 +29,14 @@ Class Comment extends Post {
 INSERT INTO `commentDetails` (
 	  `uniqueID`
 	, `article`
+	, `author`
+	, `email`
 )
 VALUES (
-	  "' . mysql_escape_string( $this -> getUniqueID() ) . '"
-	, "' . mysql_escape_string( $this -> getArticle() ) . '"
+	  "' . $this -> getUniqueID() . '"
+	, "' . $this -> getArticle() . '"
+	, "' . $this -> getAuthor() . '"
+	, "' . $this -> getEmail() . '"
 )';
 	
 		switch( $returnType ) {
@@ -74,11 +89,13 @@ VALUES (
 		
 		$query = '
 SELECT
-	`article`
+	  `article`
+	, `author`
+	, `email`
 FROM
 	`commentDetails`
 WHERE
-	`uniqueID` = "' . mysql_escape_string( $this -> getUniqueID() ) . '"';
+	`uniqueID` = "' . $this -> getUniqueID() . '"';
 	
 		switch( $returnType ) {
 			
@@ -94,6 +111,8 @@ WHERE
 					$row = $statement -> fetch();
 					
 					$this -> setArticle( $row[ "article" ] );
+					$this -> setAuthor( $row[ "author" ] );
+					$this -> setEmail( $row[ "email" ] );
 					
 					$returnValue = true;
 					
@@ -132,31 +151,40 @@ SET
 WHERE
 	`uniqueID` = "' . $this -> getUniqueID() . '"';
 		
-		if( $returnType == "bool" ) {
-		
-			$returnValue = false;
+		switch( $returnType ) {
 			
-			try {
+			case "0" : {
+		
+				$returnValue = false;
+				
+				parent::updateDB();
+				
+				try {
 
-				$statement = $dbh -> prepare( $query );
-				$statement -> execute();
+					$statement = $dbh -> prepare( $query );
+					$statement -> execute();
+					
+					$returnValue = true;
+					
+				} 
+				catch( PDOException $e ) {
+					
+				   print "Error!: " . $e -> getMessage();			   
+				   die();
+				   
+				}		
+			
+			}
+			break;
+			
+			case "1" : {
 				
-				$returnValue = true;
-				
-			} 
-			catch( PDOException $e ) {
-				
-			   print "Error!: " . $e -> getMessage();			   
-			   die();
-			   
-			}		
+				$returnValue = $query . parent::updateDB( 1 );
+			
+			}
+			break;
 			
 		}
-		else {
-			
-			$returnValue = $query;
-		
-		}		
 		
 		return $returnValue;
 	
@@ -164,13 +192,19 @@ WHERE
 	
 	function __construct( $uniqueID = "00000",
 	                      $body = "",
-	                      $article = "" ) {
+	                      $article = "",
+	                      $author = "anonymouse",
+	                      $email = "user@mail.com" ) {
 
 		parent::__construct( $uniqueID, $body );
 
 		if( $uniqueID == "00000" ) {
 
 			$this -> setArticle( $article );
+			
+			$this -> setAuthor( $author );
+			
+			$this -> setEmail( $email );
 
 		}
 		else {
@@ -188,23 +222,56 @@ function getComments( $returnType = 0, $filter = "all" ) {
 	GLOBAL $dbh;
 
 	$query = '
-SELECT
-	`uniqueID`
-FROM
-	`commentDetails`
+SELECT 
+	  `commentDetails`.`uniqueID` 
+	, `postDetails`.`dateCreated`
+FROM 
+	`commentDetails` 
+	INNER JOIN 
+		`postDetails` 
+	ON  
+		`commentDetails`.`uniqueID` = `postDetails`.`uniqueID`
 WHERE';
 
-	if( $filter == "all" ) {
+	switch( $filter ) {
+		
+		case "approved" : {
 
-		$query .= '
+	$query .= '
+	`postDetails`.`status` = 1';
+
+		}
+		break;
+		
+		case "pending" : {
+
+	$query .= '
+	`postDetails`.`status` = 0';
+
+		}
+		break;
+		
+		case "rejected" : {
+
+	$query .= '
+	`postDetails`.`status` = 2';
+
+		}
+		break;
+		
+		case "all" :
+		default : {
+
+	$query .= '
 	1';
-
+		}
+		break;
+	
 	}
-	else {
-
-		// more to come?
-
-	}
+	
+$query .= '
+ORDER BY
+	`dateCreated` DESC';	
 
 	switch( $returnType ) {
 
