@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>INDEX</title>
+		<link type="text/css" rel="stylesheet" href="./styles/blog.css.php" />
+	</head>
+	<body>
+		<div class="wrapper">
+			<div class="header">
+			</div>
+			<div class="body">
+				<div class="sideColumn">
+					<p>Hi there, my name's <span data-owner="name">John Doe</span> and I am a <span data-owner="profession">Mechanic</span> from <span data-type="city">Nairobi</span>, <span data-type="country">Kenya</span></p>
+				</div>
+				
+				<div class="mainColumn">
+					<div class="article">
+						<h1 id="article-title">Article Title</h1>
+						
+						<div id="article-body">
+							<p>This is the body of the article.</p>
+						</div>
+					</div>
+					
+					<div class="comments">
+						<div class="comment" data-remove-flag="1">
+							<p class="meta">on <span data-comment="date">12 May 1619</span> at <span data-comment="time">04:19 PM</span>, <span data-comment="author">johndoe</span> said :</p>
+							<p class="comment-body">Hi There!</p>
+						</div>
+					</div>
+					
+					<div class="dialog comment-notification" style="display: none;">
+						<p data-comment-notification="ok">your comment has been saved and is awaiting moderation, thank you for your feedback</p>
+						<p data-comment-notification="fail">There was a problem saving your comment</p>
+					</div>
+					
+					<div class="commentForm">
+						<form action="#" method="POST">
+							<fieldset class="info">
+								<legend>please leave a comment</legend>
+								<input type="hidden" id="target" name="target" value="COMMENT_ID" />
+								
+								<div class="row">
+									<textarea name="comment" placeholder="your comment here"></textarea>
+									<span class="error" id="comment-empty-error">Your comment cannot be empty</span>
+								</div>
+							</fieldset>
+							
+							<fieldset class="info identity">
+								<div class="row">
+									<input type="text" name="name" 
+										placeholder="your name" required="required" />
+									<span class="error" id="comment-name-empty-error">Please provide a valid name</span>
+								</div>
+								
+								<div class="row">
+									<input type="email" name="email"
+										placeholder="your email address [ will not be shared with anyone ]"
+										required="required" />
+									<span class="error" id="comment-email-empty-error">Please provide a valid email</span>
+								</div>
+							</fieldset>
+							
+							<fieldset class="buttons">
+								<button type="submit">comment</button>
+							</fieldset>
+						</form>
+					</div>
+					
+					<p id="inexistent-article-error" class="error">Sorry, the article referenced no longer exists</p>
+					
+					<div class="dialog" id="unspecified-article">
+						<p>you have to specify an article to view</p>
+					</div>
+				</div>
+				
+			</div>
+			<div class="footer"></div>
+		</div>
+	</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>INDEX</title>
+		<link type="text/css" rel="stylesheet" href="./styles/blog.css.php" />
+	</head>
+	<body>
+		<div class="wrapper">
+			<div class="header">
+			</div>
+			<div class="body">
+				<div class="sideColumn">
+					<p>Hi there, my name's <span data-owner="name">John Doe</span> and I am a <span data-owner="profession">Mechanic</span> from <span data-type="city">Nairobi</span>, <span data-type="country">Kenya</span></p>
+				</div>
+				
+				<div class="mainColumn">
+					<div class="article" data-remove-flag="1">
+						<!--
+						 The links should follow the following criteria
+						
+						<a href="?section=articles&amp;action=view&amp;target=ARTICLE_ID">
+						
+						where ARTICLE_ID is the id of the article in the database
+						-->
+						<a class="article-href" href="article.html">
+							<h1 class="article-title">Article Title</h1>
+						</a>
+						
+						<div class="article-excerpt">
+							<p>This is the body of the article.</p>
+						</div>
+						
+						<p class="inexistent-article-error error">Sorry, the article referenced no longer exists</p>
+					</div>
+					
+					<div class="dialog no-posts">
+						<p> no posts yet :( </p>
+					</div>
+				</div>
+				
+				
+			</div>
+			<div class="footer"></div>
+		</div>
+	</body>
+</html>

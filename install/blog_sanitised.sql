@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS `articleDetails` (
 CREATE TABLE IF NOT EXISTS `commentDetails` (
   `uniqueID` varchar(5) NOT NULL,
   `article` varchar(5) NOT NULL,
-  `name` varchar(80) NOT NULL,
+  `author` varchar(80) NOT NULL,
   `email` varchar(80) NOT NULL,
   PRIMARY KEY (`uniqueID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;

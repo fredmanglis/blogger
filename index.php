@@ -9,6 +9,9 @@ session_start();
 /** Install the app if necessary, by checking if the install folder exists and if so installing  **/
 if ( file_exists( "install" ) ) { header( "Location: install/install.php" ); }
 
+require_once( "./libs/DOMTemplate/domtemplate.php" );
+require_once( "./Constants.php" );
+
 require_once( "./User.class.php" );
 require_once( "./Token.class.php" );
 require_once( "./Article.class.php" );
@@ -21,11 +24,19 @@ $allowed = array('b' => array(),
                  'i' => array(),
                  'a' => array('href' => 1, 'title' => 1),
                  'p' => array('align' => 1),
-                 'br' => array());
+                 'br' => array(), 
+                 'h2' => array());
 
 { // page building variables
+$index_page = Constants::HTML_TEMPLATES_DIR."/index.html";
+$article_page = Constants::HTML_TEMPLATES_DIR."/article.html";
 
-$url = '';						// set to your sites URL, may or may not be usefull
+@session_start();
+
+/* Default template */
+$template = DOMTemplate::fromFile($article_page);;
+
+$url = '';						// set to your sites URL, may or may not be useful
 $name = 'Ibrahim';
 $proffesion = 'web developer';
 	
@@ -70,168 +81,116 @@ $pageBody = '';
 
 $section = "articles";
 
-if( isset( $_REQUEST[ "section" ] ) ) {
-	
+if( isset( $_REQUEST[ "section" ] ) ) {	
 	$section = $_REQUEST[ "section" ];
-
 }
 
 switch( $section ) {
 	
-	case "home" : {
-		
+	case "home" : {	
 		if( isset( $_REQUEST[ "year" ] ) ) {
-			
 			$year = $_REQUEST[ "year" ];
 					
 			if( isset( $_REQUEST[ "month" ] ) ) {
-				
 				$month = $_REQUEST[ "month" ];
-			
 			}
-			
 		}
-	
 	}
 	break;
 	
 	case "articles" : {
-		
 		$action = "list";
 		
 		if( isset( $_REQUEST[ "action" ] ) ) {
-			
 			$action = $_REQUEST[ "action" ];
-		
 		}
 		
 		switch( $action ) {
 			
 			case "list" : {
-					
+				$template = DOMTemplate::fromFile($index_page);
 				$articles = getArticles();
 				
 				if( count( $articles ) > 0 ) {
+					$template->remove(".no-posts");
 					
 					$limit = 5;
 					
 					if( count( $articles ) <= 5 ) {
-					
 						$limit = count( $articles );
-					
 					}
 					
-					for( $i = 0; $i < $limit; $i++ ) {
-				
+					for( $i = count($articles)-1; $i >= 0; $i-- ) {
 						$article = new Article( $articles[ $i ] );
+						$article_snippet = $template->repeat(".article");
 						
 						if( articleExists( 0, $articles[ $i ] ) ) {
-							
-							$pageBody .= '
-	<div class="article">
-		<a href="?section=articles&amp;action=view&amp;target=' . $articles[ $i ] . '">
-			<h1>' . $article -> getTitle() . '</h1>
-		</a>
-	</div>';
-			
-						}
-						else {
-							
-							$pageBody .= '
-	<p>Sorry, the article referenced no longer exists</p>';
-			
+							$article_snippet->setValue(".article-title",$article->getTitle());
+							$article_snippet->setValue(".article-href@href","?section=articles&action=view&target={$articles[$i]}");
+							$article_snippet->setValue("./@data-remove-flag","0");
+							$article_snippet->remove(".article-excerpt");
+							$article_snippet->remove(".no-posts");
+							$article_snippet->remove(".inexistent-article-error");
+						} else {
+							$article_snippet->remove(".article-title");
+							$article_snippet->remove(".article-excerpt");
+							$article_snippet->remove(".no-posts");
 						}
 						
+						$article_snippet->next();
 					}
-					
-				}
-				else {
-				
-					$pageBody .= '
-	<div class="dialog">
-		<p> no posts yet :( </p>
-	</div>';
-			
-				}
-							
+				} else {
+					$template->remove(".article");
+				}			
 			}
 			break;
 						
 			case "view" : {
 				
 				if( isset( $_REQUEST[ "target" ] ) ) {
-					
+					$template = DOMTemplate::fromFile($article_page);
 					$article = new Article( $_REQUEST[ "target" ] );
 					
-					$pageBody .= '
-<div class="article">
-	<h1>' . $article -> getTitle() . '</h1>
-	' . kses( Markdown( $article -> getBody() ), $allowed ) . '
-</div>
-<div class="comments">';
+					$template->setValue("#article-title", $article->getTitle());
+					$template->setValue("#article-body",kses(Markdown($article->getBody()), $allowed ), true);
+					$template->remove("#inexistent-article-error");
+					$template->remove("#unspecified-article");
+					
 
 					if( count( $article -> getComments() ) > 0 ) {
-	
-						foreach( $article -> getComments() as $commentID ) {
-						
-							$comment = new Comment( $commentID );
 
-							$pageBody .= '
-	<div class="comment">
-		<p class="meta">on ' . substr( $comment -> getDateCreated(), 0, 10 ) . ' at ' . substr( $comment -> getDateCreated(), 11, 8 ) . ', ' . $comment -> getAuthor() . ' said :</p>
-		' . kses( Markdown( $comment -> getBody() ), $allowed ) . '
-	</div>';
-	
+						$comments = $article->getComments();
+						for( $i = count($comments)-1; $i >= 0;  $i-- ) {
+							$comment = new Comment( $comments[$i] );
+							
+							$comment_snippet = $template->repeat("div.comment");
+							$comment_snippet->setValue('.meta//span[@data-comment="date"]', substr($comment->getDateCreated(), 0, 10));
+							$comment_snippet->setValue('.meta//span[@data-comment="time"]', substr($comment->getDateCreated(), 11, 8));
+							$comment_snippet->setValue('.meta//span[@data-comment="author"]', $comment->getAuthor());
+							$comment_snippet->setValue('.comment-body', kses(Markdown($comment->getBody()), $allowed), true);
+							$comment_snippet->setValue("@data-remove-flag","0");
+							$comment_snippet->next();
 						}
 						
 					}
-
-					$pageBody .= '
-</div>
-<div class="commentForm">
-	<form action="?section=comments&amp;action=new"
-	      method="post">
-		<fieldset class="info">
-			<legend>please leave a comment</legend>
-			<input type="hidden"
-			       name="target"
-			       value="' . $_REQUEST[ "target" ] . '" />
-			<div class="row">
-				<textarea name="comment"
-				          placeholder="your comment here"></textarea>
-			</div>
-		</fieldset>
-		<fieldset class="info identity">
-			<div class="row">
-				<!-- <label for="name">name</label> -->
-				<input type="text"
-				       name="name"
-				       placeholder="your name"
-				       required="required" />
-			</div>
-			<div class="row">
-				<!-- <label for="email">email</label> -->
-				<input type="email"
-				       name="email"
-				       placeholder="your email address [ will not be shared with anyone ]"
-				       required="required" />
-			</div>
-		</fieldset>
-		<fieldset class="buttons">
-			<button type="submit">comment</button>
-		</fieldset>
-	</form>
-</div>';
-				
+					$template->setValue('.commentForm/form@action', '?section=comments&amp;action=new');
+					$template->setValue('.commentForm/form/fieldset/#target@value', $article->getUniqueID());
 				}
 				else {
-					
-					$pageBody .= '
-<div class="dialog">
-	<p>you have to specify an article to view</p>
-</div>';
-						
+					$template->remove('#article');
+					$template->remove("#inexistent-article-error");
 				}
+				
+				if ( isset($_SESSION['comment_saved']) && ($_SESSION['comment_saved']==='ok') ) {
+					$template->setValue('.comment-notification@style', 'display: block;');
+					$template->remove('p@data-comment-notification="fail"');
+				} else if ( isset($_SESSION['comment_saved']) && ($_SESSION['comment_saved']==='fail') ) {
+					$template->setValue('.comment-notification@style', 'display: block;');
+					$template->remove('p@data-comment-notification="ok"');
+				}
+				unset($_SESSION['comment_saved']);
+				
+				remove_comment_errors($template);
 			
 			}
 			break;
@@ -252,52 +211,42 @@ switch( $section ) {
 		}
 		
 		switch( $action ) {
-			
+			/** TODO
+			 * Rework this to remove the various comment error checking and handling to a separate file
+			 */
 			case "add" :
 			case "new" :
 			default : {
 				
-				if( isset( $_POST[ "comment" ] ) ) {
+				if( isset( $_POST[ "comment" ] ) && ($_POST["comment"] !== '') ) {
 					
 					if( isset( $_POST[ "name" ] ) && isset( $_POST[ "email" ] ) && isset( $_POST[ "target" ] ) && ( filter_var( $_POST[ "email" ], FILTER_VALIDATE_EMAIL ) ) ) {
 						
 						$comment = new Comment( "00000", $_POST[ "comment" ], $_POST[ "target" ], $_POST[ "name" ], $_POST[ "email" ] );
 						
 						if( $comment -> saveToDB() ) {
-							
-							$pageBody .= '
-<div class="dialog">
-	<p>your comment has been saved and is awaiting moderation, thank you for your feedback</p>
-</div>';
-						
+							$_SESSION['comment_saved'] = 'ok';
 						}
 						else {
-							
-							$pageBody .= '
-<div class="dialog">
-	<p>There was a problem saving yourcomment</p>
-</div>';
-						
+							$_SESSION['comment_saved'] = 'fail';
 						}
 					
 					}
 					else {
+						if ( (!isset($_POST['name'])) || ($_POST['name']==='') ) {
+							$_SESSION['errors']['name']='empty';
+						}
 						
-						$pageBody .= '
-<div class="dialog">
-	<p>you must provide a valid email address and a name</p>
-</div>';
-					
+						if ( (!isset($_POST['email'])) || ($_POST['email']==='') ||  (!filter_var($_POST["email"],FILTER_VALIDATE_EMAIL)) ) {
+							$_SESSION['errors']['email']='invalid';
+						}
 					}
-				
+					
+					header("Location: ?section=articles&action=view&target={$_POST['target']}");
 				}
 				else {
-						
-					$pageBody .= '
-<div class="dialog">
-	<p>you comment cannot be empty</p>
-</div>';
-					
+						$_SESSION['errors']['comment']='empty';
+						header("Location: ?section=articles&action=view&target={$_POST['target']}");
 				}
 			
 			}
@@ -355,6 +304,24 @@ switch( $format ) {
 	 
 }
 
-echo $output;
+//echo $output;
+$template->remove('div@data-remove-flag="1"');
+echo $template->html();
+
+function remove_comment_errors(&$template) {
+	if( !isset($_SESSION['errors']['name']) ){
+		$template->remove('#comment-name-empty-error');
+	}
+	
+	if( !isset($_SESSION['errors']['email']) ){
+		$template->remove('#comment-email-empty-error');
+	}
+	
+	if( !isset($_SESSION['errors']['comment']) ){
+		$template->remove('#comment-empty-error');
+	}
+	
+	unset($_SESSION['errors']);
+}
 
 ?>
